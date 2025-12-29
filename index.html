@@ -594,10 +594,22 @@ function mapLeads(rows){
     city: hmap.findIndex(h=>["city","cities","town"].includes(h)),
     zip:  hmap.findIndex(h=>["zip","zipcode","postal","zippostalcode","postalcode"].includes(h)),
     type: hmap.findIndex(h=>["type","leadtype"].includes(h)),
-    mobile: hmap.findIndex(h=>["mobile","cell","cellphone","mobilephone","phonenumber","phone","phone1"].includes(h)),
-    home: hmap.findIndex(h=>["home","homephone","phone2"].includes(h)),
+    // Map the primary phone number. Accept a variety of header names (mobile, cell, phone, number, etc.)
+    mobile: hmap.findIndex(h=>[
+      "mobile","cell","cellphone","mobilephone","phonenumber","phone","phone1","number",
+      "phone number","phone#","tel","telephone"
+    ].includes(h)),
+    // Map the secondary phone number. Accept home phone or alternative number headers
+    home: hmap.findIndex(h=>[
+      "home","homephone","phone2","home phone","homephone2","number2","phonenumber2",
+      "secondaryphone","secondarynumber","altphone","alternatephone"
+    ].includes(h)),
     email: hmap.findIndex(h=>["email","emailaddress"].includes(h)),
-    address: hmap.findIndex(h=>["address","street","streetaddress","addr"].includes(h)),
+    // Map address and allow common misspellings like "adress" as well as street variations
+    address: hmap.findIndex(h=>[
+      "address","street","streetaddress","addr","adress",
+      "address1","addressline1","address line 1"
+    ].includes(h)),
     state: hmap.findIndex(h=>["state","st","province"].includes(h)),
   };
 
