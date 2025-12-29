@@ -73,7 +73,6 @@
     .ghost:active{transform:translateY(1px)}
     .hidden{display:none !important}
 
-    /* List table look */
     .list-header{
       padding:10px 12px; border-bottom:1px solid var(--line);
       display:grid; grid-template-columns: 2.2fr 1.2fr 1.2fr .8fr .8fr;
@@ -100,18 +99,12 @@
       background:#fff; cursor:pointer; display:grid; place-items:center; font-size:16px;
     }
     .icon-btn:active{transform:translateY(1px)}
-    .subnote{
-      grid-column:1 / -1;
-      color:#111; font-size:12px; padding-top:6px;
-    }
-    .subnote .muted{color:var(--muted)}
     .status-line{
       grid-column:1 / -1;
       color:#0f172a; font-size:12px; margin-top:6px;
       padding:8px 10px; border-radius:10px; background:#f8fafc; border:1px dashed var(--line);
     }
 
-    /* Detail card */
     .detail-head{
       padding:12px; border-bottom:1px solid var(--line);
       display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
@@ -145,7 +138,6 @@
     .action:active{transform:translateY(1px)}
     .action.disabled{opacity:.45; cursor:not-allowed; pointer-events:none}
 
-    /* Tabs + disposition sheet */
     .tabs{
       margin-top:12px;
       border:1px solid var(--line);
@@ -165,7 +157,6 @@
       color:#fff;
     }
     .tabcontent{padding:12px}
-    .dispo-title{font-weight:900; margin:0 0 10px 0}
     .dispo-item{
       padding:12px; border:1px solid var(--line); border-radius:12px;
       background:#fff; cursor:pointer;
@@ -178,10 +169,9 @@
     .resolve{margin-top:6px; width:100%; padding:12px; border-radius:12px; border:1px solid var(--line); background:#fff; font-weight:900; cursor:pointer}
     .resolve:active{transform:translateY(1px)}
 
-    /* Modal overlay */
     .overlay{
       position:fixed; inset:0; background:rgba(2,6,23,.55); display:none;
-      align-items:flex-end; justify-content:center; padding:14px;
+      align-items:flex-end; justify-content:center; padding:14px; z-index:1000;
     }
     .overlay.show{display:flex}
     .sheet{
@@ -201,13 +191,17 @@
     .toast{
       position:fixed; left:50%; transform:translateX(-50%);
       bottom:16px; background:#0f172a; color:#fff; padding:10px 12px;
-      border-radius:999px; font-size:12px; display:none; box-shadow:var(--shadow);
+      border-radius:999px; font-size:12px; display:none; box-shadow:var(--shadow); z-index:2000;
     }
     .toast.show{display:block}
     .divider{height:1px;background:var(--line);margin:10px 0}
     .footerbar{
       padding:10px 12px; border-top:1px solid var(--line);
       display:flex; gap:10px; justify-content:flex-end; background:#f8fafc;
+    }
+    .debug-info{
+      margin-top:10px; padding:10px; background:#f8fafc; border:1px solid var(--line);
+      border-radius:8px; font-size:11px; font-family:var(--mono);
     }
     @media (max-width: 720px){
       .list-header, .lead-row{grid-template-columns: 2.2fr 1.1fr 1.1fr .9fr .9fr}
@@ -234,7 +228,6 @@
 
   <div class="wrap">
 
-    <!-- Login -->
     <section id="loginView" class="panel" style="padding:14px;">
       <div class="grid" style="gap:10px">
         <div class="h1">Enter code</div>
@@ -251,7 +244,6 @@
       </div>
     </section>
 
-    <!-- List -->
     <section id="listView" class="panel hidden">
       <div class="list-header">
         <div>Name</div>
@@ -263,7 +255,6 @@
       <div id="leadList"></div>
     </section>
 
-    <!-- Detail -->
     <section id="detailView" class="panel hidden">
       <div class="detail-head">
         <div>
@@ -335,7 +326,6 @@
   </div>
 </div>
 
-<!-- disposition modal (also used when clicking phone) -->
 <div class="overlay" id="overlay">
   <div class="sheet">
     <div class="sheethead">
@@ -354,19 +344,13 @@
 <div class="toast" id="toast">Saved</div>
 
 <script>
-/**
- * STATIC GITHUB PAGES NOTE:
- * - We can READ ./CODE.csv via fetch
- * - We CANNOT write back to ./CODE.csv on the server
- * - So we store outcomes in localStorage and let you EXPORT a new CSV
- */
-
-// Limit dispositions to three options as requested: No Answer, Pick Up, and appointment setting
 const DISPOSITIONS = [
   { key:"Pick Up", desc:"Client answered the call." },
   { key:"No Answer", desc:"Client did not answer the call." },
   { key:"Set Virtual Appointment", desc:"Schedule a virtual appointment and send confirmation." },
 ];
+
+const DIAL_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0HaEd0rJqfRKD6HEwMxG1d-aGfFXGF_wfWH9YWt2qpz5MNjyLeyrW7YkCzzqBLJ2jrA/exec";
 
 const els = {
   loginView: document.getElementById("loginView"),
@@ -381,7 +365,6 @@ const els = {
   exportBtn: document.getElementById("exportBtn"),
   resetBtn: document.getElementById("resetBtn"),
   todayDials: document.getElementById("todayDials"),
-
   dName: document.getElementById("dName"),
   dMeta: document.getElementById("dMeta"),
   dLang: document.getElementById("dLang"),
@@ -395,31 +378,25 @@ const els = {
   droppedBy: document.getElementById("droppedBy"),
   prevLead: document.getElementById("prevLead"),
   nextLead: document.getElementById("nextLead"),
-
   noteInput: document.getElementById("noteInput"),
   saveNoteBtn: document.getElementById("saveNoteBtn"),
   historyBox: document.getElementById("historyBox"),
-
   dispoList: document.getElementById("dispoList"),
   resolveBtn: document.getElementById("resolveBtn"),
-
   overlay: document.getElementById("overlay"),
   modalDispoList: document.getElementById("modalDispoList"),
   closeOverlay: document.getElementById("closeOverlay"),
   cancelOverlay: document.getElementById("cancelOverlay"),
-
   toast: document.getElementById("toast"),
 };
 
 let state = {
   code: "",
-  leads: [],          // parsed leads (objects)
-  headers: [],        // original headers
+  leads: [],
+  headers: [],
   currentIndex: -1,
-  loadedFrom: "fetch", // or "upload"
+  loadedFrom: "fetch",
 };
-
-/* ------------------------ Utilities ------------------------ */
 
 function toast(msg="Saved"){
   els.toast.textContent = msg;
@@ -430,12 +407,7 @@ function toast(msg="Saved"){
 function nowLocalTimestamp(){
   const d = new Date();
   const pad = n => String(n).padStart(2,"0");
-  const yyyy = d.getFullYear();
-  const mm = pad(d.getMonth()+1);
-  const dd = pad(d.getDate());
-  const hh = pad(d.getHours());
-  const mi = pad(d.getMinutes());
-  return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function todayKey(){
@@ -445,14 +417,12 @@ function todayKey(){
 }
 
 function normalizeHeader(h){
-  return String(h||"").trim().toLowerCase().replace(/\s+/g,"");
+  return String(h||"").trim().toLowerCase().replace(/[^a-z0-9]/g,"");
 }
 
 function formatPhone10(raw){
   let digits = String(raw||"").replace(/\D/g,"");
-  // If the number is 11 digits and starts with country code 1, strip the leading 1
   if (digits.length === 11 && digits.startsWith("1")) digits = digits.slice(1);
-  // If more than 10 digits (e.g. with country or extension), keep the last 10 digits
   if (digits.length > 10) digits = digits.slice(-10);
   if (digits.length !== 10) return { ok:false, digits, pretty:"—", tel:"#"};
   const pretty = `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
@@ -476,16 +446,10 @@ function downloadText(filename, text){
   URL.revokeObjectURL(url);
 }
 
-/* ------------------------ Storage schema ------------------------ */
-
 function storageKey(){
   return `dialer:${state.code}:history`;
 }
 
-// history data format:
-// {
-//   byLeadId: { "0":[ {ts, outcome, note, phoneUsed}, ... ], "1":[ ... ] },
-// }
 function loadHistory(){
   try{
     const raw = localStorage.getItem(storageKey());
@@ -515,9 +479,6 @@ function getLeadHistory(leadId){
   return data.byLeadId[leadId] || [];
 }
 
-/* ------------------------ CSV parsing/writing ------------------------ */
-
-// Simple CSV parser for standard cases (quoted fields supported).
 function parseCSV(text){
   const rows = [];
   let i = 0, field = "", row = [], inQuotes = false;
@@ -533,7 +494,6 @@ function parseCSV(text){
 
   while(i < text.length){
     const c = text[i];
-
     if(inQuotes){
       if(c === '"'){
         if(text[i+1] === '"'){ field += '"'; i += 2; continue; }
@@ -549,7 +509,6 @@ function parseCSV(text){
     }
   }
   endField();
-  // avoid trailing empty row
   const allEmpty = row.every(v => String(v||"").trim()==="");
   if(!allEmpty) endRow();
   return rows;
@@ -562,8 +521,6 @@ function toCSV(rows){
     return s;
   }).join(",")).join("\n");
 }
-
-/* ------------------------ Load leads ------------------------ */
 
 async function loadFromFetch(code){
   const url = `./${encodeURIComponent(code)}.csv`;
@@ -582,68 +539,75 @@ function loadFromFile(file){
   });
 }
 
+function findColumn(hmap, ...patterns){
+  for(const pattern of patterns){
+    const idx = hmap.findIndex(h => h.includes(pattern));
+    if(idx !== -1) return idx;
+  }
+  return -1;
+}
+
 function mapLeads(rows){
   if(!rows.length) throw new Error("CSV is empty");
 
   const headers = rows[0];
   const hmap = headers.map(normalizeHeader);
 
-  // We try to find common columns. You can name them however you want, as long as they resemble these.
+  console.log("CSV Headers (normalized):", hmap);
+
   const idx = {
-    name: hmap.findIndex(h=>["name","fullname","leadname"].includes(h)),
-    city: hmap.findIndex(h=>["city","cities","town"].includes(h)),
-    zip:  hmap.findIndex(h=>["zip","zipcode","postal","zippostalcode","postalcode"].includes(h)),
-    type: hmap.findIndex(h=>["type","leadtype"].includes(h)),
-    // Map the primary phone number. Accept a variety of header names (mobile, cell, phone, number, etc.)
-    mobile: hmap.findIndex(h=>[
-      "mobile","cell","cellphone","mobilephone","phonenumber","phone","phone1","number",
-      "phone number","phone#","tel","telephone"
-    ].includes(h)),
-    // Map the secondary phone number. Accept home phone or alternative number headers
-    home: hmap.findIndex(h=>[
-      "home","homephone","phone2","home phone","homephone2","number2","phonenumber2",
-      "secondaryphone","secondarynumber","altphone","alternatephone"
-    ].includes(h)),
-    email: hmap.findIndex(h=>["email","emailaddress"].includes(h)),
-    // Map address and allow common misspellings like "adress" as well as street variations
-    address: hmap.findIndex(h=>[
-      "address","street","streetaddress","addr","adress",
-      "address1","addressline1","address line 1"
-    ].includes(h)),
-    state: hmap.findIndex(h=>["state","st","province"].includes(h)),
+    name: Math.max(
+      findColumn(hmap, "name", "fullname", "leadname", "contact", "client"),
+      0
+    ),
+    city: findColumn(hmap, "city", "cities", "town", "municipality"),
+    zip: findColumn(hmap, "zip", "postal", "zipcode", "postalcode"),
+    type: findColumn(hmap, "type", "leadtype", "category"),
+    mobile: findColumn(hmap, "mobile", "cell", "phone", "phonenumber", "telephone", "tel", "number", "phone1"),
+    home: findColumn(hmap, "home", "homephone", "phone2", "secondaryphone", "alternatephone"),
+    email: findColumn(hmap, "email", "emailaddress", "mail"),
+    address: findColumn(hmap, "address", "street", "addr", "adress", "streetaddress", "address1"),
+    state: findColumn(hmap, "state", "province", "region"),
   };
 
-  // Hard requirement from you: phone numbers are xxxxxxxxxx
-  // We'll still accept and sanitize digits, but if not 10 digits, we disable calling.
+  console.log("Column mapping:", idx);
+
   const leads = [];
   for(let r=1; r<rows.length; r++){
     const row = rows[r];
     if(row.every(v => String(v||"").trim()==="")) continue;
 
     const lead = {
-      __id: String(leads.length),   // sequential ID for storage
-      __rowIndex: r,                // original row index
+      __id: String(leads.length),
+      __rowIndex: r,
       __raw: row,
-      name: safeText(row[idx.name] ?? row[0] ?? "").trim(),
-      city: safeText(row[idx.city] ?? "").trim(),
-      zip: safeText(row[idx.zip] ?? "").trim(),
-      type: safeText(row[idx.type] ?? "Vendor").trim() || "Vendor",
-      mobile: safeText(row[idx.mobile] ?? "").trim(),
-      home: safeText(row[idx.home] ?? "").trim(),
-      email: safeText(row[idx.email] ?? "").trim(),
-      address: safeText(row[idx.address] ?? "").trim(),
-      state: safeText(row[idx.state] ?? "").trim(),
+      name: safeText(row[idx.name >= 0 ? idx.name : 0]).trim(),
+      city: idx.city >= 0 ? safeText(row[idx.city]).trim() : "",
+      zip: idx.zip >= 0 ? safeText(row[idx.zip]).trim() : "",
+      type: idx.type >= 0 ? safeText(row[idx.type]).trim() : "Vendor",
+      mobile: idx.mobile >= 0 ? safeText(row[idx.mobile]).trim() : "",
+      home: idx.home >= 0 ? safeText(row[idx.home]).trim() : "",
+      email: idx.email >= 0 ? safeText(row[idx.email]).trim() : "",
+      address: idx.address >= 0 ? safeText(row[idx.address]).trim() : "",
+      state: idx.state >= 0 ? safeText(row[idx.state]).trim() : "",
       language: "English",
     };
 
-    // if name is empty and first col is empty, skip
     if(!lead.name) continue;
+    
+    console.log(`Lead ${leads.length}:`, {
+      name: lead.name,
+      mobile: lead.mobile,
+      home: lead.home,
+      email: lead.email,
+      address: lead.address
+    });
+    
     leads.push(lead);
   }
+  
   return { headers, leads };
 }
-
-/* ------------------------ Rendering ------------------------ */
 
 function show(view){
   els.loginView.classList.toggle("hidden", view !== "login");
@@ -687,8 +651,7 @@ function renderList(){
     callBtn.addEventListener("click", (e)=>{
       e.stopPropagation();
       openLead(i);
-      // open call dispo right away (you can pick phone from detail too)
-      openDispositionModal("mobile");
+      setTimeout(() => openDispositionModal("mobile"), 100);
     });
 
     const navBtn = document.createElement("button");
@@ -698,7 +661,6 @@ function renderList(){
     navBtn.addEventListener("click",(e)=>{
       e.stopPropagation();
       openLead(i);
-      // no real maps data; keep placeholder
       toast("Open lead and use address");
     });
 
@@ -711,7 +673,6 @@ function renderList(){
     row.appendChild(type);
     row.appendChild(icons);
 
-    // Status line (latest history item)
     const hist = getLeadHistory(state.leads[i].__id);
     let latest = hist.length ? hist[hist.length-1] : null;
     const status = document.createElement("div");
@@ -747,15 +708,15 @@ function renderDetail(){
   const hom = formatPhone10(lead.home);
 
   els.dMobile.innerHTML = mob.ok
-    ? `<a href="${mob.tel}" data-phone="mobile" class="phoneLink">${mob.pretty}</a>`
+    ? `<a href="${mob.tel}" data-phone="mobile" class="phoneLink" style="color:#1d4ed8;text-decoration:underline;">${mob.pretty}</a>`
     : `<span class="muted">—</span>`;
 
   els.dHome.innerHTML = hom.ok
-    ? `<a href="${hom.tel}" data-phone="home" class="phoneLink">${hom.pretty}</a>`
+    ? `<a href="${hom.tel}" data-phone="home" class="phoneLink" style="color:#1d4ed8;text-decoration:underline;">${hom.pretty}</a>`
     : `<span class="muted">—</span>`;
 
   els.dEmail.innerHTML = lead.email
-    ? `<a href="mailto:${encodeURIComponent(lead.email)}">${escapeHtml(lead.email)}</a>`
+    ? `<a href="mailto:${encodeURIComponent(lead.email)}" style="color:#1d4ed8;text-decoration:underline;">${escapeHtml(lead.email)}</a>`
     : `<span class="muted">—</span>`;
 
   const addrBits = [];
@@ -764,38 +725,32 @@ function renderDetail(){
   if(cityLine) addrBits.push(cityLine);
   els.dAddr.textContent = addrBits.length ? addrBits.join(" • ") : "—";
 
-  // Action buttons
   setupCallAction(els.callMobile, mob, "mobile");
   setupCallAction(els.callHome, hom, "home");
 
-  // text: opens sms link if mobile ok
   if(mob.ok){
     els.sendText.classList.remove("disabled");
     els.sendText.href = `sms:+1${mob.digits}`;
+    els.sendText.onclick = null;
   }else{
     els.sendText.classList.add("disabled");
     els.sendText.href = "#";
+    els.sendText.onclick = (e)=>{ e.preventDefault(); toast("No valid mobile number"); };
   }
 
-  // dropped by: just saves a history note
   els.droppedBy.onclick = (e)=>{
     e.preventDefault();
     saveDisposition("Dropped By", { phoneUsed:"" });
   };
 
-  // Up/Down arrows
   els.prevLead.disabled = state.currentIndex <= 0;
   els.nextLead.disabled = state.currentIndex >= state.leads.length - 1;
 
-  // History tab content
   renderHistoryTab();
 
-  // bind phoneLink clicks to open dispo modal too
   document.querySelectorAll(".phoneLink").forEach(a=>{
-    a.addEventListener("click", ()=>{
+    a.addEventListener("click", (e)=>{
       const which = a.getAttribute("data-phone") || "mobile";
-      // iPhone will show Call prompt because it's a tel: link,
-      // we ALSO open the disposition modal immediately.
       setTimeout(()=>openDispositionModal(which), 150);
     });
   });
@@ -805,18 +760,18 @@ function setupCallAction(el, phoneObj, which){
   if(phoneObj.ok){
     el.classList.remove("disabled");
     el.href = phoneObj.tel;
-    el.onclick = ()=>{
-      // open disposition modal after initiating tel link
+    el.onclick = (e)=>{
       setTimeout(()=>openDispositionModal(which), 150);
-      // log dial attempt (even if they cancel call prompt)
       incrementDialCount();
-      // track dial in Google Sheets
       trackToSheets("Dials");
     };
   }else{
     el.classList.add("disabled");
     el.href = "#";
-    el.onclick = (e)=>{ e.preventDefault(); toast("No valid 10-digit phone"); };
+    el.onclick = (e)=>{ 
+      e.preventDefault(); 
+      toast("No valid 10-digit phone"); 
+    };
   }
 }
 
@@ -830,8 +785,6 @@ function goList(){
   show("list");
   renderList();
 }
-
-/* ------------------------ Tabs ------------------------ */
 
 document.querySelectorAll(".tabbtn").forEach(btn=>{
   btn.addEventListener("click", ()=>{
@@ -862,8 +815,6 @@ function renderHistoryTab(){
   }).join("");
   els.historyBox.innerHTML = lines;
 }
-
-/* ------------------------ Dispositions ------------------------ */
 
 function buildDispoButtons(container, onPick){
   container.innerHTML = "";
@@ -903,21 +854,15 @@ function saveDisposition(outcome, {phoneUsed=""} = {}){
   const lead = state.leads[state.currentIndex];
   if(!lead) return;
 
-  // Map specific dispositions to Google Sheets counters and optionally open Calendly
   if(outcome === "Pick Up"){
-    // increment Pickups counter in Google Sheets
     trackToSheets("Pickups");
   } else if(outcome === "No Answer"){
-    // log no answer as disconnected in Google Sheets
     trackToSheets("Disconnected");
   } else if(outcome === "Set Virtual Appointment"){
-    // increment Appointments counter in Google Sheets
     trackToSheets("Appointments");
-    // prepare Calendly link
     const calendlyBase = "https://calendly.com/thomaslancheros-ail/30min";
     const params = new URLSearchParams();
     params.set("name", lead.name || "");
-    // choose number: prefer mobile, fallback to home
     const chosen = formatPhone10(lead.mobile).ok ? formatPhone10(lead.mobile) : formatPhone10(lead.home);
     const num = chosen.ok ? chosen.digits : "";
     params.set("number", num);
@@ -937,7 +882,6 @@ function saveDisposition(outcome, {phoneUsed=""} = {}){
   addHistory(lead.__id, entry);
   toast("Outcome saved");
   renderHistoryTab();
-  // refresh list status line when you go back
 }
 
 els.saveNoteBtn.addEventListener("click", ()=>{
@@ -951,13 +895,10 @@ els.saveNoteBtn.addEventListener("click", ()=>{
   renderHistoryTab();
 });
 
-/* ------------------------ Daily dial counts ------------------------ */
-
 function dialCountKey(){
   return `dialer:${state.code}:dialcounts`;
 }
 
-// data format: { "YYYY-MM-DD": number }
 function loadDialCounts(){
   try{
     const raw = localStorage.getItem(dialCountKey());
@@ -987,12 +928,9 @@ function updateTodayDials(){
   els.todayDials.textContent = String(data[k] || 0);
 }
 
-/* ------------------------ Export CSV with History column ------------------------ */
-
 function buildHistoryString(leadId){
   const hist = getLeadHistory(leadId);
   if(!hist.length) return "";
-  // append style: timestamp - outcome (and note)
   return hist.map(h=>{
     const note = h.note ? ` (Note: ${h.note})` : "";
     return `${h.ts} - ${h.outcome}${note}`;
@@ -1002,7 +940,6 @@ function buildHistoryString(leadId){
 els.exportBtn.addEventListener("click", ()=>{
   if(!state.leads.length){ toast("Nothing to export"); return; }
 
-  // Use original headers + History column (append if already exists)
   const orig = state.headers.slice();
   const norm = orig.map(normalizeHeader);
   let historyColIndex = norm.findIndex(h=>["history","callhistory","result","results","disposition","dispositions"].includes(h));
@@ -1014,11 +951,8 @@ els.exportBtn.addEventListener("click", ()=>{
   }
 
   const outRows = [headers];
-
-  // rebuild rows based on original raw row, but inject History cell
   state.leads.forEach(lead=>{
     const raw = lead.__raw.slice();
-    // make sure row has length at least headers length
     while(raw.length < headers.length) raw.push("");
     raw[historyColIndex] = buildHistoryString(lead.__id);
     outRows.push(raw);
@@ -1030,7 +964,6 @@ els.exportBtn.addEventListener("click", ()=>{
 });
 
 els.resetBtn.addEventListener("click", ()=>{
-  // wipe UI state only; do NOT delete saved history
   state = { code:"", leads:[], headers:[], currentIndex:-1, loadedFrom:"fetch" };
   els.codePill.textContent = "—";
   show("login");
@@ -1039,22 +972,19 @@ els.resetBtn.addEventListener("click", ()=>{
   updateTodayDials();
 });
 
-/* ------------------------ Navigation arrows ------------------------ */
-
 els.prevLead.addEventListener("click", ()=>{
   if(state.currentIndex > 0){
     state.currentIndex--;
     renderDetail();
   }
 });
+
 els.nextLead.addEventListener("click", ()=>{
   if(state.currentIndex < state.leads.length - 1){
     state.currentIndex++;
     renderDetail();
   }
 });
-
-/* ------------------------ Login / Load flow ------------------------ */
 
 els.loadBtn.addEventListener("click", async ()=>{
   const code = els.codeInput.value.trim();
@@ -1076,7 +1006,6 @@ els.fileInput.addEventListener("change", async ()=>{
   const file = els.fileInput.files && els.fileInput.files[0];
   if(!file) return;
 
-  // if they upload, we still need a code for storage separation
   let code = els.codeInput.value.trim();
   if(!code){
     code = file.name.replace(/\.csv$/i,"") || "uploaded";
@@ -1099,7 +1028,6 @@ async function startWithCode(code){
     const { text, from } = await loadFromFetch(code);
     bootSheet(code, text, from);
   }catch(err){
-    // offer fallback: upload csv
     els.loginHint.textContent = (err.message || "Could not load CSV") + " — You can upload the CSV instead.";
   }
 }
@@ -1122,36 +1050,23 @@ function bootSheet(code, csvText, from){
     return;
   }
 
-  // List view first
   show("list");
   renderList();
   els.loginHint.textContent = "";
 }
-</script>
-<script>
-/* ===== SHARED DIAL TRACKING (GOOGLE SHEETS) ===== */
-const DIAL_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0HaEd0rJqfRKD6HEwMxG1d-aGfFXGF_wfWH9YWt2qpz5MNjyLeyrW7YkCzzqBLJ2jrA/exec";
 
 function getAgentName() {
-  // Use the loaded code as the agent name; fallback to any saved dialTrackerAgentName
   if(window.state && state.code) return state.code;
   return localStorage.getItem("dialTrackerAgentName") || "";
 }
 
 function trackToSheets(action) {
   const agent = getAgentName();
-  if (!agent) return; // silently fail if agent not set
+  if (!agent) {
+    console.warn("No agent name set for tracking");
+    return;
+  }
 
-  fetch(DIAL_SCRIPT_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: agent,
-      action: action
-    })
-  });
-}
-</script>
-</body>
-</html>
+  console.log(`Tracking to Sheets: ${agent} - ${action}`);
+
+  fetch(DIAL_
