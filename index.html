@@ -13,11 +13,7 @@
       --line:#d6dde6;
       --brand:#4d72ff;
       --brand2:#2f5fe8;
-      --tab:#0b5bd3;
-      --tab2:#0a3f9c;
       --good:#0e7a2b;
-      --warn:#b45309;
-      --bad:#b91c1c;
       --shadow:0 10px 25px rgba(15,23,42,.08);
       --radius:10px;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -32,7 +28,7 @@
       color:#fff; display:flex; align-items:center; justify-content:space-between;
       padding:0 14px; box-shadow:var(--shadow);
     }
-    .topbar .title{font-weight:700; letter-spacing:.3px}
+    .topbar .title{font-weight:700; letter-spacing:.3px; text-transform:uppercase;}
     .topbar .right{display:flex; gap:10px; align-items:center}
     .pill{
       background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.22);
@@ -199,13 +195,13 @@
       padding:10px 12px; border-top:1px solid var(--line);
       display:flex; gap:10px; justify-content:flex-end; background:#f8fafc;
     }
-    .debug-info{
-      margin-top:10px; padding:10px; background:#f8fafc; border:1px solid var(--line);
-      border-radius:8px; font-size:11px; font-family:var(--mono);
+    .name-grid{
+      display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;
     }
     @media (max-width: 720px){
       .list-header, .lead-row{grid-template-columns: 2.2fr 1.1fr 1.1fr .9fr .9fr}
       .actions{grid-template-columns: repeat(2,1fr)}
+      .name-grid{grid-template-columns:1fr;}
     }
   </style>
 </head>
@@ -213,7 +209,7 @@
 <div class="app">
 
   <div class="topbar">
-    <div class="title">LANCHEROS, THOMAS</div>
+    <div class="title" id="agentNameDisplay">AGENT</div>
     <div class="right">
       <div class="pill">
         <span>Code:</span><code id="codePill">—</code>
@@ -228,9 +224,10 @@
 
   <div class="wrap">
 
+    <!-- Step 1: Enter Code -->
     <section id="loginView" class="panel" style="padding:14px;">
       <div class="grid" style="gap:10px">
-        <div class="h1">Enter code</div>
+        <div class="h1">Step 1: Enter Code</div>
         <div class="muted small">Loads <span style="font-family:var(--mono)">./CODE.csv</span> from this folder. Example: enter <b>agent1</b> to load <span style="font-family:var(--mono)">agent1.csv</span>.</div>
         <input id="codeInput" class="input" placeholder="code (filename without .csv)" autocomplete="off" />
         <div class="row" style="justify-content:space-between">
@@ -244,6 +241,21 @@
       </div>
     </section>
 
+    <!-- Step 2: Enter Name -->
+    <section id="nameView" class="panel hidden" style="padding:14px;">
+      <div class="grid" style="gap:10px">
+        <div class="h1">Step 2: Enter Your Name</div>
+        <div class="muted small">Your name will be used for tracking in Google Sheets.</div>
+        <div class="name-grid">
+          <input id="firstNameInput" class="input" placeholder="First Name" autocomplete="given-name" />
+          <input id="lastNameInput" class="input" placeholder="Last Name" autocomplete="family-name" />
+        </div>
+        <button id="continueBtn" class="primary">Continue to Leads</button>
+        <div class="muted small" id="nameHint"></div>
+      </div>
+    </section>
+
+    <!-- List -->
     <section id="listView" class="panel hidden">
       <div class="list-header">
         <div>Name</div>
@@ -255,6 +267,7 @@
       <div id="leadList"></div>
     </section>
 
+    <!-- Detail -->
     <section id="detailView" class="panel hidden">
       <div class="detail-head">
         <div>
@@ -354,12 +367,18 @@ const DIAL_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0HaEd0rJqfRKD
 
 const els = {
   loginView: document.getElementById("loginView"),
+  nameView: document.getElementById("nameView"),
   listView: document.getElementById("listView"),
   detailView: document.getElementById("detailView"),
   codeInput: document.getElementById("codeInput"),
   loadBtn: document.getElementById("loadBtn"),
   fileInput: document.getElementById("fileInput"),
   loginHint: document.getElementById("loginHint"),
+  firstNameInput: document.getElementById("firstNameInput"),
+  lastNameInput: document.getElementById("lastNameInput"),
+  continueBtn: document.getElementById("continueBtn"),
+  nameHint: document.getElementById("nameHint"),
+  agentNameDisplay: document.getElementById("agentNameDisplay"),
   codePill: document.getElementById("codePill"),
   leadList: document.getElementById("leadList"),
   exportBtn: document.getElementById("exportBtn"),
@@ -392,6 +411,7 @@ const els = {
 
 let state = {
   code: "",
+  agentName: "",
   leads: [],
   headers: [],
   currentIndex: -1,
@@ -611,6 +631,7 @@ function mapLeads(rows){
 
 function show(view){
   els.loginView.classList.toggle("hidden", view !== "login");
+  els.nameView.classList.toggle("hidden", view !== "name");
   els.listView.classList.toggle("hidden", view !== "list");
   els.detailView.classList.toggle("hidden", view !== "detail");
 }
@@ -964,8 +985,9 @@ els.exportBtn.addEventListener("click", ()=>{
 });
 
 els.resetBtn.addEventListener("click", ()=>{
-  state = { code:"", leads:[], headers:[], currentIndex:-1, loadedFrom:"fetch" };
+  state = { code:"", agentName:"", leads:[], headers:[], currentIndex:-1, loadedFrom:"fetch" };
   els.codePill.textContent = "—";
+  els.agentNameDisplay.textContent = "AGENT";
   show("login");
   els.loginHint.textContent = "";
   els.codeInput.value = "";
@@ -1000,6 +1022,28 @@ els.codeInput.addEventListener("keydown", async (e)=>{
     const code = els.codeInput.value.trim();
     if(code) await startWithCode(code);
   }
+});
+
+els.continueBtn.addEventListener("click", ()=>{
+  const first = els.firstNameInput.value.trim();
+  const last = els.lastNameInput.value.trim();
+  if(!first || !last){
+    els.nameHint.textContent = "Please enter both first and last name.";
+    return;
+  }
+  state.agentName = `${first} ${last}`;
+  els.agentNameDisplay.textContent = state.agentName.toUpperCase();
+  console.log("Agent name set:", state.agentName);
+  show("list");
+  renderList();
+});
+
+els.firstNameInput.addEventListener("keydown", (e)=>{
+  if(e.key === "Enter") els.lastNameInput.focus();
+});
+
+els.lastNameInput.addEventListener("keydown", (e)=>{
+  if(e.key === "Enter") els.continueBtn.click();
 });
 
 els.fileInput.addEventListener("change", async ()=>{
@@ -1050,23 +1094,32 @@ function bootSheet(code, csvText, from){
     return;
   }
 
-  show("list");
-  renderList();
-  els.loginHint.textContent = "";
-}
-
-function getAgentName() {
-  if(window.state && state.code) return state.code;
-  return localStorage.getItem("dialTrackerAgentName") || "";
+  show("name");
+  els.nameHint.textContent = "";
 }
 
 function trackToSheets(action) {
-  const agent = getAgentName();
-  if (!agent) {
+  if (!state.agentName) {
     console.warn("No agent name set for tracking");
     return;
   }
 
-  console.log(`Tracking to Sheets: ${agent} - ${action}`);
+  console.log(`Tracking to Sheets: ${state.agentName} - ${action}`);
 
-  fetch(DIAL_
+  fetch(DIAL_SCRIPT_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: state.agentName,
+      action: action
+    })
+  }).then(() => {
+    console.log(`✓ Tracked: ${action} for ${state.agentName}`);
+  }).catch(err => {
+    console.error("Tracking error:", err);
+  });
+}
+</script>
+</body>
+</html>
