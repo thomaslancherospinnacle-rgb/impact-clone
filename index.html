@@ -361,14 +361,11 @@
  * - So we store outcomes in localStorage and let you EXPORT a new CSV
  */
 
+// Limit dispositions to three options as requested: No Answer, Pick Up, and appointment setting
 const DISPOSITIONS = [
-  { key:"Set In - Home Appointment", desc:"Set and send confirmation; no reply text to the client." },
-  { key:"Set Virtual Appointment", desc:"Set and send confirmation; no reply text + email with virtual meeting link." },
-  { key:"Bad Number / Set Dropby Appointment", desc:"Client cannot be contacted — set a drop by appointment in your schedule." },
-  { key:"Set Call Back Appointment", desc:"Client cannot be contacted — set a call-back appointment in your schedule." },
-  { key:"Left Message", desc:"Left a voice mail for the client." },
-  { key:"No Answer", desc:"Client did not answer the phone." },
-  { key:"Re-Schedule Appointment", desc:"Client set appointment to another time." },
+  { key:"Pick Up", desc:"Client answered the call." },
+  { key:"No Answer", desc:"Client did not answer the call." },
+  { key:"Set Virtual Appointment", desc:"Schedule a virtual appointment and send confirmation." },
 ];
 
 const els = {
@@ -452,7 +449,11 @@ function normalizeHeader(h){
 }
 
 function formatPhone10(raw){
-  const digits = String(raw||"").replace(/\D/g,"");
+  let digits = String(raw||"").replace(/\D/g,"");
+  // If the number is 11 digits and starts with country code 1, strip the leading 1
+  if (digits.length === 11 && digits.startsWith("1")) digits = digits.slice(1);
+  // If more than 10 digits (e.g. with country or extension), keep the last 10 digits
+  if (digits.length > 10) digits = digits.slice(-10);
   if (digits.length !== 10) return { ok:false, digits, pretty:"—", tel:"#"};
   const pretty = `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
   const tel = `tel:+1${digits}`;
@@ -890,9 +891,16 @@ function saveDisposition(outcome, {phoneUsed=""} = {}){
   const lead = state.leads[state.currentIndex];
   if(!lead) return;
 
-  // Track Set Virtual Appointment outcome: open Calendly and send to Google Sheets
-  if(outcome === "Set Virtual Appointment"){
-    // track appointment in Google Sheets
+  // Map specific dispositions to Google Sheets counters and optionally open Calendly
+  if(outcome === "Pick Up"){
+    // increment Pickups counter in Google Sheets
+    trackToSheets("Pickups");
+  } else if(outcome === "No Answer"){
+    // Optionally track disconnected/no answer; mapped to "Disconnected" column
+    // trackToSheets("Disconnected");
+    // currently we only record the history without incrementing a separate column
+  } else if(outcome === "Set Virtual Appointment"){
+    // increment Appointments counter in Google Sheets
     trackToSheets("Appointments");
     // prepare Calendly link
     const calendlyBase = "https://calendly.com/thomaslancheros-ail/30min";
