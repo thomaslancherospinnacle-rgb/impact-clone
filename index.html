@@ -549,7 +549,7 @@ function parseCSV(text){
   }
   endField();
   // avoid trailing empty row
-  const allEmpty = row.every(v => String(v).trim()==="");
+  const allEmpty = row.every(v => String(v||"").trim()==="");
   if(!allEmpty) endRow();
   return rows;
 }
@@ -718,7 +718,7 @@ function renderList(){
 
 function escapeHtml(s){
   return String(s||"").replace(/[&<>"']/g, (m)=>({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"
   }[m]));
 }
 
@@ -797,6 +797,8 @@ function setupCallAction(el, phoneObj, which){
       setTimeout(()=>openDispositionModal(which), 150);
       // log dial attempt (even if they cancel call prompt)
       incrementDialCount();
+      // track dial in Google Sheets
+      trackToSheets("Dials");
     };
   }else{
     el.classList.add("disabled");
@@ -887,6 +889,25 @@ els.overlay.addEventListener("click", (e)=>{ if(e.target === els.overlay) closeO
 function saveDisposition(outcome, {phoneUsed=""} = {}){
   const lead = state.leads[state.currentIndex];
   if(!lead) return;
+
+  // Track Set Virtual Appointment outcome: open Calendly and send to Google Sheets
+  if(outcome === "Set Virtual Appointment"){
+    // track appointment in Google Sheets
+    trackToSheets("Appointments");
+    // prepare Calendly link
+    const calendlyBase = "https://calendly.com/thomaslancheros-ail/30min";
+    const params = new URLSearchParams();
+    params.set("name", lead.name || "");
+    // choose number: prefer mobile, fallback to home
+    const chosen = formatPhone10(lead.mobile).ok ? formatPhone10(lead.mobile) : formatPhone10(lead.home);
+    const num = chosen.ok ? chosen.digits : "";
+    params.set("number", num);
+    params.set("email", lead.email || "");
+    params.set("address", lead.address || "");
+    params.set("state", lead.state || "");
+    params.set("zip", lead.zip || "");
+    window.open(`${calendlyBase}?${params.toString()}`, "_blank");
+  }
 
   const entry = {
     ts: nowLocalTimestamp(),
@@ -1086,6 +1107,31 @@ function bootSheet(code, csvText, from){
   show("list");
   renderList();
   els.loginHint.textContent = "";
+}
+</script>
+<script>
+/* ===== SHARED DIAL TRACKING (GOOGLE SHEETS) ===== */
+const DIAL_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0HaEd0rJqfRKD6HEwMxG1d-aGfFXGF_wfWH9YWt2qpz5MNjyLeyrW7YkCzzqBLJ2jrA/exec";
+
+function getAgentName() {
+  // Use the loaded code as the agent name; fallback to any saved dialTrackerAgentName
+  if(window.state && state.code) return state.code;
+  return localStorage.getItem("dialTrackerAgentName") || "";
+}
+
+function trackToSheets(action) {
+  const agent = getAgentName();
+  if (!agent) return; // silently fail if agent not set
+
+  fetch(DIAL_SCRIPT_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: agent,
+      action: action
+    })
+  });
 }
 </script>
 </body>
