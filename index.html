@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Leads</title>
+  <style>
+    :root{
+      --blue:#4a63ff;
+      --ink:#0f172a;
+      --muted:#64748b;
+      --line:#e5e7eb;
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --btn:#0b5bd3;
+      --btn2:#0a3b8a;
+      --green:#16a34a;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--ink);
+    }
+    a{color:inherit}
+    .app{
+      max-width: 520px;
+      margin: 0 auto;
+      min-height:100vh;
+      background:var(--bg);
+    }
+    /* Top bar */
+    .topbar{
+      background:var(--blue);
+      color:#fff;
+      padding:10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      position:sticky;
+      top:0;
+      z-index:20;
+      box-shadow:0 1px 0 rgba(0,0,0,.08);
+    }
+    .topbar .title{
+      font-weight:700;
+      letter-spacing:.2px;
+      font-size:14px;
+    }
+    .topbar .right{
+      display:flex; gap:10px; align-items:center;
+    }
+    .iconbtn{
+      width:34px;height:34px;border-radius:10px;
+      display:grid;place-items:center;
+      background:rgba(255,255,255,.16);
+      border:1px solid rgba(255,255,255,.18);
+      cursor:pointer;
+      user-select:none;
+    }
+    .icon{width:18px;height:18px;fill:#fff}
+
+    /* Card/table */
+    .panel{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:10px;
+      margin:12px;
+      overflow:hidden;
+      box-shadow:0 1px 0 rgba(0,0,0,.04);
+    }
+    .panel-head{
+      padding:12px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      background:#fff;
+    }
+    .panel-head .left{
+      display:flex; gap:10px; align-items:center;
+      min-width:0;
+    }
+    .pill{
+      font-size:12px;
+      color:var(--muted);
+      border:1px dashed var(--line);
+      padding:6px 10px;
+      border-radius:999px;
+      background:#fafafa;
+      white-space:nowrap;
+    }
+    .upload{
+      display:flex; gap:8px; align-items:center;
+    }
+    input[type="file"]{display:none}
+    .btn{
+      border:1px solid var(--line);
+      background:#fff;
+      padding:8px 10px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:650;
+      font-size:12px;
+      color:var(--ink);
+    }
+    .btn.primary{
+      background:var(--btn);
+      border-color:var(--btn);
+      color:#fff;
+    }
+    .btn.primary:active{background:var(--btn2)}
+    .btn:active{transform:translateY(1px)}
+
+    .table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:12px;
+    }
+    .table thead th{
+      text-align:left;
+      padding:10px 12px;
+      color:#fff;
+      background:#243b8a;
+      font-weight:700;
+      border-right:1px solid rgba(255,255,255,.12);
+      white-space:nowrap;
+    }
+    .table thead th:last-child{border-right:none}
+    .table tbody td{
+      padding:10px 12px;
+      border-bottom:1px solid var(--line);
+      vertical-align:top;
+    }
+    .name-link{
+      color:#2563eb;
+      text-decoration:none;
+      font-weight:750;
+    }
+    .subnote{
+      color:var(--muted);
+      font-size:11px;
+      margin-top:4px;
+    }
+    .row-actions{
+      display:flex;
+      gap:8px;
+      justify-content:flex-end;
+      align-items:center;
+    }
+    .mini-ic{
+      width:26px;height:26px;border-radius:8px;
+      border:1px solid var(--line);
+      display:grid;place-items:center;
+      background:#fff;
+      cursor:pointer;
+    }
+    .mini-ic svg{width:14px;height:14px;fill:#0f172a}
+    .muted{color:var(--muted)}
+    .empty{
+      padding:18px 12px;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    /* Detail page */
+    .detail{
+      padding:12px;
+    }
+    .crumb{
+      display:flex; gap:8px; align-items:center;
+      margin:6px 12px 0;
+      color:#fff;
+      opacity:.95;
+      font-size:12px;
+    }
+    .crumb a{color:#fff; text-decoration:none; font-weight:700}
+    .detail-card{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:10px;
+      overflow:hidden;
+      box-shadow:0 1px 0 rgba(0,0,0,.04);
+    }
+    .detail-top{
+      padding:12px;
+      border-bottom:1px solid var(--line);
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:10px;
+      align-items:start;
+    }
+    .lead-name{
+      font-weight:800;
+      font-size:14px;
+      letter-spacing:.2px;
+    }
+    .kv{
+      margin-top:8px;
+      display:grid;
+      gap:6px;
+      color:var(--muted);
+      font-size:12px;
+    }
+    .kv b{color:var(--ink)}
+    .addr{
+      margin-top:10px;
+      padding-top:10px;
+      border-top:1px dashed var(--line);
+      color:var(--ink);
+      font-size:12px;
+    }
+    .addr .line2{color:var(--muted); margin-top:2px}
+    .quick-icons{
+      display:grid;
+      gap:8px;
+      justify-items:end;
+    }
+    .quick{
+      width:40px;height:40px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#fff;
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+    }
+    .quick svg{width:18px;height:18px;fill:#0f172a}
+    .action-grid{
+      padding:10px 12px;
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:10px;
+      border-bottom:1px solid var(--line);
+    }
+    .action{
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:10px;
+      padding:10px 8px;
+      text-align:center;
+      font-size:11px;
+      font-weight:700;
+      cursor:pointer;
+      user-select:none;
+    }
+    .action.disabled{
+      opacity:.45;
+      cursor:not-allowed;
+      background:#fafafa;
+    }
+    .action .small{display:block; margin-top:6px; font-weight:600; color:var(--muted)}
+    .statusbar{
+      padding:10px 12px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:12px;
+      color:var(--muted);
+      background:#fff;
+    }
+    .statusbar .status{color:var(--ink); font-weight:750}
+    .tabs{
+      margin-top:12px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:10px;
+      overflow:hidden;
+    }
+    .tab-head{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom:1px solid var(--line);
+      background:#fff;
+    }
+    .tab{
+      padding:12px;
+      font-weight:800;
+      font-size:12px;
+      text-align:center;
+      cursor:pointer;
+      user-select:none;
+    }
+    .tab.active{
+      background:#0f3f52;
+      color:#fff;
+    }
+    .tab:not(.active){
+      background:#0b5a8a;
+      color:#fff;
+      opacity:.95;
+    }
+    .tab-body{
+      padding:12px;
+      color:var(--muted);
+      font-size:12px;
+      background:#fff;
+    }
+
+    /* Call outcome drawer/modal */
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.25);
+      display:none;
+      z-index:50;
+    }
+    .overlay.show{display:block}
+    .drawer{
+      position:fixed;
+      left:50%;
+      transform:translateX(-50%);
+      bottom:0;
+      width:min(520px, 100vw);
+      background:#fff;
+      border-radius:14px 14px 0 0;
+      box-shadow:0 -10px 30px rgba(0,0,0,.18);
+      border:1px solid var(--line);
+      max-height:82vh;
+      overflow:auto;
+    }
+    .drawer-head{
+      padding:12px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .drawer-head .h{
+      font-weight:900;
+      font-size:13px;
+    }
+    .drawer-close{
+      width:34px;height:34px;border-radius:10px;
+      border:1px solid var(--line);
+      display:grid;place-items:center;
+      cursor:pointer;
+      background:#fff;
+    }
+    .drawer-close svg{width:16px;height:16px;fill:#0f172a}
+    .drawer-section{
+      padding:12px;
+      border-bottom:1px solid var(--line);
+    }
+    .drawer-section .sec-title{
+      font-weight:900;
+      font-size:12px;
+      margin-bottom:8px;
+      color:var(--ink);
+    }
+    .choice{
+      padding:10px 0;
+      border-top:1px solid var(--line);
+    }
+    .choice:first-child{border-top:none}
+    .choice .t{
+      font-weight:850;
+      font-size:12px;
+      color:var(--ink);
+    }
+    .choice .d{
+      margin-top:2px;
+      font-size:11px;
+      color:var(--muted);
+      line-height:1.25;
+    }
+    .resolve{
+      padding:12px;
+    }
+    .resolve .btn{
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      font-size:13px;
+      font-weight:900;
+    }
+    .hint{
+      margin:10px 12px 0;
+      color:#fff;
+      opacity:.9;
+      font-size:11px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="title" id="topTitle">LANCHEROS, THOMAS</div>
+      <div class="right">
+        <div class="iconbtn" title="Logout (fake)">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v2h-2V5H5v14h3v-2h2zm9.59-5-3.3 3.3-1.41-1.42L15.76 13H10v-2h5.76l-.88-.88 1.41-1.42 3.3 3.3z"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div id="viewList">
+      <div class="hint">Upload a CSV → click a name → tap Call.</div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div class="left">
+            <div class="pill" id="countPill">INBOX • 0</div>
+            <div class="pill muted" id="pagePill">1 / 1</div>
+          </div>
+          <div class="upload">
+            <label class="btn" for="csvFile">Upload CSV</label>
+            <input id="csvFile" type="file" accept=".csv,text/csv" />
+            <button class="btn primary" id="clearBtn" type="button" title="Clear loaded leads">Clear</button>
+          </div>
+        </div>
+
+        <table class="table" aria-label="Lead list">
+          <thead>
+            <tr>
+              <th style="width:44%">Name</th>
+              <th style="width:22%">Cities</th>
+              <th style="width:22%">Zip/Postal Code</th>
+              <th style="width:12%">Type</th>
+              <th style="width:0%"></th>
+            </tr>
+          </thead>
+          <tbody id="listBody">
+            <tr><td colspan="5" class="empty">No leads loaded. Upload a CSV.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="viewDetail" style="display:none;">
+      <div class="crumb">
+        <a href="#list" id="backLink">◀ INBOX</a>
+        <span id="crumbName" style="font-weight:800"></span>
+      </div>
+
+      <div class="detail">
+        <div class="detail-card">
+          <div class="detail-top">
+            <div>
+              <div class="lead-name" id="dName">—</div>
+              <div class="kv">
+                <div><span class="muted">Language:</span> <b>English</b></div>
+                <div><span class="muted">Mobile:</span> <b id="dMobile">—</b></div>
+                <div><span class="muted">Home:</span> <b id="dHome">—</b></div>
+                <div><span class="muted">Email:</span> <b id="dEmail">—</b></div>
+              </div>
+              <div class="addr">
+                <div><b id="dAddr1">—</b></div>
+                <div class="line2" id="dAddr2">—</div>
+              </div>
+            </div>
+
+            <div class="quick-icons">
+              <button class="quick" id="qCall" title="Call">
+                <svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.5 3 3.6 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.3 1.2.4 2.5.6 3.8.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.5 21 3 13.5 3 4c0-.6.4-1 1-1h3.1c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.3 1.1L6.6 10.8z"/></svg>
+              </button>
+              <button class="quick" id="qMap" title="Map It">
+                <svg viewBox="0 0 24 24"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7zm0 9.5c-1.4 0-2.5-1.1-2.5-2.5S10.6 6.5 12 6.5s2.5 1.1 2.5 2.5S13.4 11.5 12 11.5z"/></svg>
+              </button>
+              <button class="quick" id="qNav" title="Navigate">
+                <svg viewBox="0 0 24 24"><path d="M12 2l7 19-7-4-7 4 7-19zm0 6.6L9.8 15l2.2-1.2 2.2 1.2L12 8.6z"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="action-grid">
+            <a class="action" id="aCallMobile" href="#" role="button">📞<span class="small">Call Mobile</span></a>
+            <a class="action" id="aCallHome" href="#" role="button">📞<span class="small">Call Home</span></a>
+            <a class="action" id="aText" href="#" role="button">✉️<span class="small">Send Text</span></a>
+            <div class="action" id="aDropBy">🚶<span class="small">Dropped By</span></div>
+          </div>
+
+          <div class="statusbar">
+            <div><span class="status">Status</span></div>
+            <div id="dStatus">—</div>
+          </div>
+        </div>
+
+        <div class="tabs" style="margin-top:12px;">
+          <div class="tab-head">
+            <div class="tab active" id="tabComments">Comments</div>
+            <div class="tab" id="tabHistory">History</div>
+          </div>
+          <div class="tab-body" id="tabBody">No comment history found</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Call outcome overlay -->
+    <div class="overlay" id="overlay">
+      <div class="drawer" role="dialog" aria-modal="true" aria-label="Call outcome">
+        <div class="drawer-head">
+          <div class="h">Call - What Happened?</div>
+          <div class="drawer-close" id="closeDrawer" title="Close">
+            <svg viewBox="0 0 24 24"><path d="M18.3 5.7 12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7 2.9 18.3 9.2 12 2.9 5.7 4.3 4.3l6.3 6.3 6.3-6.3 1.4 1.4z"/></svg>
+          </div>
+        </div>
+
+        <div class="drawer-section">
+          <div class="sec-title">Details &amp; History</div>
+
+          <div class="choice">
+            <div class="t">Set In - Home Appointment:</div>
+            <div class="d">Set and send confirmation no reply text to the client.</div>
+          </div>
+          <div class="choice">
+            <div class="t">Set Virtual Appointment:</div>
+            <div class="d">Set and send confirmation no reply text and email with virtual meeting link.</div>
+          </div>
+          <div class="choice">
+            <div class="t">Bad Number/Set Dropby Appointment:</div>
+            <div class="d">Client cannot be contacted - Set a drop by appointment in your schedule.</div>
+          </div>
+          <div class="choice">
+            <div class="t">Set Call Back Appointment:</div>
+            <div class="d">Client cannot be contacted - Set a called back appointment in your schedule.</div>
+          </div>
+          <div class="choice">
+            <div class="t">Left Message:</div>
+            <div class="d">Left a voice mail for the client.</div>
+          </div>
+          <div class="choice">
+            <div class="t">No Answer:</div>
+            <div class="d">Client did not answer the phone.</div>
+          </div>
+          <div class="choice">
+            <div class="t">Re-Schedule Appointment:</div>
+            <div class="d">Client Set Appointment to another time.</div>
+          </div>
+        </div>
+
+        <div class="resolve">
+          <button class="btn primary" id="resolveBtn" type="button">Resolve</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ---------- Storage ----------
+  const STORAGE_KEY = "leads_csv_v1";
+  const STATUS_KEY = "leads_status_v1";
+
+  /** @type {Array<any>} */
+  let leads = [];
+  /** @type {Record<string,string>} */
+  let leadStatus = {};
+
+  // ---------- Helpers ----------
+  const $ = (id)=>document.getElementById(id);
+
+  function sanitizeDigits(s){
+    return String(s ?? "").replace(/\D/g,"");
+  }
+  function normalizePhone10(s){
+    const d = sanitizeDigits(s);
+    // If someone includes leading "1", keep last 10
+    if (d.length === 11 && d.startsWith("1")) return d.slice(1);
+    if (d.length >= 10) return d.slice(-10);
+    return "";
+  }
+  function formatPhonePretty(ten){
+    const d = normalizePhone10(ten);
+    if (!d) return "—";
+    return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+  }
+  function safeText(s){ return (s ?? "").toString().trim(); }
+  function makeId(obj, idx){
+    // stable-ish id: name + zip + mobile/home
+    const key = [obj.name,obj.zip,obj.mobile,obj.home,obj.email].join("|").toLowerCase();
+    let h = 0;
+    for (let i=0;i<key.length;i++){ h = (h*31 + key.charCodeAt(i)) >>> 0; }
+    return `${idx}_${h.toString(16)}`;
+  }
+
+  function parseCSV(text){
+    // Simple CSV parser with quotes support (good enough for your use)
+    const rows = [];
+    let row = [], field = "", inQuotes = false;
+    for (let i=0;i<text.length;i++){
+      const c = text[i];
+      const n = text[i+1];
+      if (c === '"' ){
+        if (inQuotes && n === '"'){ field += '"'; i++; }
+        else inQuotes = !inQuotes;
+      } else if (c === "," && !inQuotes){
+        row.push(field); field = "";
+      } else if ((c === "\n" || c === "\r") && !inQuotes){
+        if (c === "\r" && n === "\n") i++;
+        row.push(field);
+        const isBlank = row.every(x => String(x).trim() === "");
+        if (!isBlank) rows.push(row);
+        row = []; field = "";
+      } else {
+        field += c;
+      }
+    }
+    row.push(field);
+    if (!row.every(x => String(x).trim() === "")) rows.push(row);
+    return rows;
+  }
+
+  function mapHeaders(headers){
+    const idx = {};
+    headers.forEach((h,i)=>{
+      const k = String(h || "").trim().toLowerCase();
+      idx[k] = i;
+    });
+
+    function pick(...names){
+      for (const n of names){
+        const k = n.toLowerCase();
+        if (k in idx) return idx[k];
+      }
+      return -1;
+    }
+
+    return {
+      name: pick("name","full name","lead","lead name"),
+      city: pick("cities","city","town"),
+      zip: pick("zip/postal code","zip","postal","postal code"),
+      type: pick("type","lead type"),
+      mobile: pick("mobile","cell","cell phone","phone","phonenumber","phone number"),
+      home: pick("home","home phone"),
+      email: pick("email","e-mail"),
+      address: pick("address","street","street address","addr"),
+      state: pick("state","province"),
+    };
+  }
+
+  function loadFromStorage(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const rawStatus = localStorage.getItem(STATUS_KEY);
+      leads = raw ? JSON.parse(raw) : [];
+      leadStatus = rawStatus ? JSON.parse(rawStatus) : {};
+    }catch{
+      leads = [];
+      leadStatus = {};
+    }
+  }
+
+  function saveToStorage(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
+    localStorage.setItem(STATUS_KEY, JSON.stringify(leadStatus));
+  }
+
+  // ---------- Rendering ----------
+  function renderList(){
+    const body = $("listBody");
+    $("countPill").textContent = `INBOX • ${leads.length}`;
+    $("pagePill").textContent = `1 / 1`;
+
+    if (!leads.length){
+      body.innerHTML = `<tr><td colspan="5" class="empty">No leads loaded. Upload a CSV.</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = leads.map((l)=>{
+      const status = leadStatus[l.id] || l.status || "";
+      const statusLine = status ? `<div class="subnote">${escapeHtml(status)}</div>` : "";
+      return `
+        <tr>
+          <td>
+            <a class="name-link" href="#lead=${encodeURIComponent(l.id)}">${escapeHtml(l.name || "—")}</a>
+            ${statusLine}
+          </td>
+          <td>${escapeHtml(l.city || "—")}</td>
+          <td>${escapeHtml(l.zip || "—")}</td>
+          <td>${escapeHtml(l.type || "Vendor")}</td>
+          <td>
+            <div class="row-actions">
+              ${l.mobile10 ? miniBtn(`tel:${l.mobile10}`, phoneSvg(), "Call mobile") : ""}
+              ${l.home10 ? miniBtn(`tel:${l.home10}`, phoneSvg(), "Call home") : ""}
+              ${(l.mobile10 || l.home10) ? miniBtn(`sms:${l.mobile10 || l.home10}`, msgSvg(), "Text") : ""}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  function miniBtn(href, svg, title){
+    // onclick => show call outcome if tel
+    const isTel = href.startsWith("tel:");
+    const handler = isTel ? `onclick="window.__showOutcomeSoon();"` : "";
+    return `<a class="mini-ic" href="${href}" ${handler} title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">${svg}</a>`;
+  }
+
+  function renderDetail(id){
+    const l = leads.find(x=>x.id === id);
+    if (!l){
+      location.hash = "#list";
+      return;
+    }
+    $("crumbName").textContent = l.name || "";
+    $("dName").textContent = l.name || "—";
+
+    $("dMobile").textContent = l.mobile10 ? formatPhonePretty(l.mobile10) : "—";
+    $("dHome").textContent = l.home10 ? formatPhonePretty(l.home10) : "—";
+    $("dEmail").textContent = l.email || "—";
+
+    const addr1 = l.address || "—";
+    const city = l.city || "";
+    const st = l.state || "";
+    const zip = l.zip || "";
+    const line2 = [city, st].filter(Boolean).join(", ") + (zip ? ` ${zip}` : "");
+    $("dAddr1").textContent = addr1;
+    $("dAddr2").textContent = line2 || "—";
+
+    const status = leadStatus[l.id] || l.status || "—";
+    $("dStatus").textContent = status;
+
+    // Action buttons
+    const mobileTel = l.mobile10 ? `tel:${l.mobile10}` : "#";
+    const homeTel = l.home10 ? `tel:${l.home10}` : "#";
+    const textTo = (l.mobile10 || l.home10) ? `sms:${l.mobile10 || l.home10}` : "#";
+
+    const aCallMobile = $("aCallMobile");
+    const aCallHome = $("aCallHome");
+    const aText = $("aText");
+
+    aCallMobile.href = mobileTel;
+    aCallHome.href = homeTel;
+    aText.href = textTo;
+
+    aCallMobile.classList.toggle("disabled", !l.mobile10);
+    aCallHome.classList.toggle("disabled", !l.home10);
+    aText.classList.toggle("disabled", !(l.mobile10 || l.home10));
+
+    aCallMobile.onclick = l.mobile10 ? () => { showOutcomeSoon(); return true; } : (e)=>{e.preventDefault();};
+    aCallHome.onclick = l.home10 ? () => { showOutcomeSoon(); return true; } : (e)=>{e.preventDefault();};
+    aText.onclick = (l.mobile10 || l.home10) ? ()=>true : (e)=>{e.preventDefault();};
+
+    // Quick icons
+    $("qCall").onclick = () => {
+      const target = l.mobile10 || l.home10;
+      if (!target) return;
+      showOutcomeSoon();
+      // Try to trigger tel without leaving the page too hard:
+      window.location.href = `tel:${target}`;
+    };
+
+    $("qMap").onclick = () => {
+      const q = encodeURIComponent([addr1, line2].filter(Boolean).join(" "));
+      window.open(`https://maps.google.com/?q=${q}`, "_blank");
+    };
+
+    $("qNav").onclick = () => {
+      const q = encodeURIComponent([addr1, line2].filter(Boolean).join(" "));
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${q}`, "_blank");
+    };
+
+    $("aDropBy").onclick = () => {
+      leadStatus[l.id] = `After DropBy visit, selected 'No Answer' on ${new Date().toLocaleString()}`;
+      saveToStorage();
+      renderDetail(l.id);
+      renderList();
+    };
+
+    // Tabs
+    $("tabComments").onclick = () => setTab("comments");
+    $("tabHistory").onclick = () => setTab("history");
+    setTab("comments");
+
+    showView("detail");
+  }
+
+  function setTab(which){
+    const c = $("tabComments");
+    const h = $("tabHistory");
+    c.classList.toggle("active", which === "comments");
+    h.classList.toggle("active", which === "history");
+    $("tabBody").textContent = which === "comments" ? "No comment history found" : "No history found";
+  }
+
+  function showView(which){
+    $("viewList").style.display = (which === "list") ? "" : "none";
+    $("viewDetail").style.display = (which === "detail") ? "" : "none";
+  }
+
+  function handleRoute(){
+    const hash = location.hash || "#list";
+    if (hash.startsWith("#lead=")){
+      const id = decodeURIComponent(hash.slice(6));
+      renderDetail(id);
+    } else {
+      showView("list");
+      renderList();
+    }
+  }
+
+  // ---------- Call outcome drawer ----------
+  const overlay = $("overlay");
+  const closeDrawer = $("closeDrawer");
+  const resolveBtn = $("resolveBtn");
+
+  function showOutcome(){
+    overlay.classList.add("show");
+  }
+  function hideOutcome(){
+    overlay.classList.remove("show");
+  }
+  function showOutcomeSoon(){
+    // Show shortly AFTER click so the tel prompt still triggers on iOS
+    setTimeout(showOutcome, 250);
+  }
+  window.__showOutcomeSoon = showOutcomeSoon;
+
+  overlay.addEventListener("click", (e)=>{
+    if (e.target === overlay) hideOutcome();
+  });
+  closeDrawer.addEventListener("click", hideOutcome);
+  resolveBtn.addEventListener("click", hideOutcome);
+
+  // ---------- CSV upload ----------
+  $("csvFile").addEventListener("change", async (e)=>{
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const text = await file.text();
+    const rows = parseCSV(text);
+    if (rows.length < 2){
+      alert("CSV looks empty. Needs a header row + at least 1 lead row.");
+      return;
+    }
+
+    const headers = rows[0];
+    const map = mapHeaders(headers);
+
+    if (map.name === -1){
+      alert("CSV must include a 'name' column (header).");
+      return;
+    }
+
+    const out = [];
+    for (let i=1;i<rows.length;i++){
+      const r = rows[i];
+      const obj = {
+        name: safeText(r[map.name]),
+        city: map.city !== -1 ? safeText(r[map.city]) : "",
+        zip: map.zip !== -1 ? safeText(r[map.zip]) : "",
+        type: map.type !== -1 ? safeText(r[map.type]) : "Vendor",
+        mobile: map.mobile !== -1 ? safeText(r[map.mobile]) : "",
+        home: map.home !== -1 ? safeText(r[map.home]) : "",
+        email: map.email !== -1 ? safeText(r[map.email]) : "",
+        address: map.address !== -1 ? safeText(r[map.address]) : "",
+        state: map.state !== -1 ? safeText(r[map.state]) : "",
+        status: "",
+      };
+
+      if (!obj.name) continue;
+
+      obj.mobile10 = normalizePhone10(obj.mobile);
+      obj.home10 = normalizePhone10(obj.home);
+
+      obj.id = makeId(obj, i);
+
+      // If no explicit status, create one like your screenshot style
+      if (!leadStatus[obj.id]) obj.status = "";
+
+      out.push(obj);
+    }
+
+    leads = out;
+    saveToStorage();
+    renderList();
+    location.hash = "#list";
+    e.target.value = ""; // reset input so re-upload works
+  });
+
+  $("clearBtn").addEventListener("click", ()=>{
+    leads = [];
+    leadStatus = {};
+    saveToStorage();
+    renderList();
+    location.hash = "#list";
+  });
+
+  // ---------- Utilities ----------
+  function escapeHtml(s){
+    return String(s ?? "").replace(/[&<>"']/g, (m)=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
+  }
+  function phoneSvg(){
+    return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8c1.5 3 3.6 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.3 1.2.4 2.5.6 3.8.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.5 21 3 13.5 3 4c0-.6.4-1 1-1h3.1c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.3 1.1L6.6 10.8z"/></svg>`;
+  }
+  function msgSvg(){
+    return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5L4 8V6l8 5 8-5v2z"/></svg>`;
+  }
+
+  // ---------- Boot ----------
+  loadFromStorage();
+  renderList();
+  window.addEventListener("hashchange", handleRoute);
+  handleRoute();
+</script>
+</body>
+</html>
