@@ -896,9 +896,8 @@ function saveDisposition(outcome, {phoneUsed=""} = {}){
     // increment Pickups counter in Google Sheets
     trackToSheets("Pickups");
   } else if(outcome === "No Answer"){
-    // Optionally track disconnected/no answer; mapped to "Disconnected" column
-    // trackToSheets("Disconnected");
-    // currently we only record the history without incrementing a separate column
+    // log no answer as disconnected in Google Sheets
+    trackToSheets("Disconnected");
   } else if(outcome === "Set Virtual Appointment"){
     // increment Appointments counter in Google Sheets
     trackToSheets("Appointments");
